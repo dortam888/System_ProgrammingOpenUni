@@ -1,0 +1,10 @@
+{
+Thats a special case
+A special case is when you have one curly parenthesis with only white spaces in the line
+(The line where they appear should be unbalanced)
+But it shouldn't hurt the text balance if they get close in the end
+}
+	 {  		
+This should also {work} if there [are] only whitespaces and a curly bracket 
+	    }
+Text should be balanced			
