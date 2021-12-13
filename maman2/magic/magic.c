@@ -12,10 +12,9 @@ int main()
 		return err;
 	}
 		
-	PrintMatrix((const int (*)[])matrix);
+	PrintMatrix((const int(*)[])matrix);
 	
-	IsMagicSquare((const int (*)[])matrix)? printf("The Matrix Is Magic Square\n") : 
-											printf("The Matrix Is Not Magic Square\n");
+	IsMagicSquare((const int (*)[])matrix);
 	
 	return 0;
 }

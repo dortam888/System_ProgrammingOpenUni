@@ -25,10 +25,17 @@ void PrintMatrix(const matrix_t matrix)
 	}
 }
 
+/*Checks if there is more imput after the matrix is filled*/
 static int IsInputAfterMatrix(error_t *err)
 {
 	return GetInt(err) != 0 || *err != NOT_ENOUGH_INPUTS; /*expect to not get any number (also not zero) in that case GetInt will return the error
 															NOT_ENOUGH_INPUTS*/
+}
+
+static int** HandleError(error_t err)
+{
+	PrintErrorMessage(err);
+	return NULL;	
 }
 
 /*Input numbers to given matrix see matrix.h for details*/
@@ -39,6 +46,7 @@ int** InputMatrix(matrix_t matrix, error_t *err)
 	
 	printf("Please enter a matrix of size %d X %d (%d integer values separated by whitespace)\n", N, N, N*N);
 	
+	/*Fill matrix*/
 	for (i = 0; i < N; ++i)
 	{
 		for(j = 0; j < N; ++j)
@@ -47,8 +55,7 @@ int** InputMatrix(matrix_t matrix, error_t *err)
 			
 			if(*err != OK) /* if there is an error in input return NULL*/
 			{
-				PrintErrorMessage(*err);
-				return NULL;
+				return HandleError(*err);
 			}
 		}
 	}
@@ -56,10 +63,10 @@ int** InputMatrix(matrix_t matrix, error_t *err)
 	if(IsInputAfterMatrix(err)) /* if there are inputs after the matrix filled return NULL */
 	{	
 		*err = TOO_MANY_INPUTS;
-		PrintErrorMessage(*err);
-		return NULL;
+		return HandleError(*err);
+		
 	}
-	else
+	else /* Input process succeed*/
 	{
 		*err = OK;
 	}
@@ -99,6 +106,13 @@ int SumOfColumn(const matrix_t matrix, int column)
 static int IsSignNotChanged(int sign)
 {
 	return sign == 1;
+}
+
+
+/*checks if any number was read from input*/
+static error_t IsNumberRead(int is_number_read)
+{
+	return is_number_read? OK : NOT_ENOUGH_INPUTS;
 }
 
 /*Gets a string that represent an integer and returns it.
@@ -142,14 +156,7 @@ static int GetInt(error_t *err)
 		}
 	}	
 	
-	if(!is_number_read) 
-	{
-		*err = NOT_ENOUGH_INPUTS;
-	}
-	else
-	{
-		*err = OK;
-	}
+	*err = IsNumberRead(is_number_read); /*checks if any number was read from input*/
 	
 	return num * sign;
 }
@@ -216,10 +223,9 @@ static int isInRange(int number)
    the algorithm is building a look up table size N^2 and increase the value by 1 if */
 static int AreAllNumbersInRangeAppearsOnce(const matrix_t matrix)
 {
-	int numbers_lut[N*N] = {0};
+	int range_lut[N*N] = {0}; /*look up table for indexes in range of magic matrix*/
 	int i = 0;
 	int j = 0;
-	int is_in_range = 1;
 	
 	for (i = 0; i < N; ++i)
 	{
@@ -227,24 +233,41 @@ static int AreAllNumbersInRangeAppearsOnce(const matrix_t matrix)
 		{
 			if (isInRange(matrix[i][j]))
 			{
-				++numbers_lut[matrix[i][j] - 1];
-				if (numbers_lut[matrix[i][j] - 1] > 1)
+				int index_of_lut = matrix[i][j] - 1; /* number is put in the index number-1 (1 is index 0)*/
+				if(range_lut[index_of_lut] == 0)
 				{
-					is_in_range = 0;
-					break;
+					++range_lut[index_of_lut];
 				}
+				else
+				{
+					return 0;
+				}				
 			}
 			else
 			{
-				is_in_range = 0;
-				break;
+				return 0;
 			}
 		}
 	}
 	
-	return is_in_range;	
+	return 1;	
 }
 
+typedef enum{IS_NOT_MAGIC_SQUARE, IS_MAGIC_SQUARE} magic_square_t;
+
+/*Handling Not Magic Square Case*/
+static int HandleNotMagicSquare()
+{
+	printf("The Matrix Is Not Magic Square\n");
+	return IS_NOT_MAGIC_SQUARE;
+}
+
+/*Handling is Magic Square Case*/
+static int HandleIsMagicSquare()
+{
+	printf("The Matrix Is Magic Square\n");
+	return IS_MAGIC_SQUARE;
+}
 /* returns if the matrix is a magic square for more details see matrix.h*/
 int IsMagicSquare(const matrix_t matrix)
 {
@@ -253,15 +276,15 @@ int IsMagicSquare(const matrix_t matrix)
 	
 	if (!AreAllNumbersInRangeAppearsOnce(matrix))
 	{
-		return 0;
+		return HandleNotMagicSquare();
 	}
 	for (i = 0; i < N; ++i)
 	{
 		if (SumOfRow(matrix, i) != sum || SumOfColumn(matrix, i) != sum)
 		{
-			return 0;
+			return HandleNotMagicSquare();
 		} 
 	}
 	
-	return SumOfDiagonals(matrix) == sum;
+	return SumOfDiagonals(matrix) == sum? HandleIsMagicSquare() : HandleNotMagicSquare();
 }
