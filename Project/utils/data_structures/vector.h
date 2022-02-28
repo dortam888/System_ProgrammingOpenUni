@@ -76,11 +76,25 @@ int DVectorPopBack(d_vector_t *d_vector);
 	refered by index
   # Parameters:
 	d_vector - pointer to the dynamic vector
+	index - the index inside the vector to return the item from
   # Return Value:
 	address of the requested element
 	returns NULL for invalid index
 ##############################################################################*/
 void *DVectorGetItemAddress(const d_vector_t *d_vector, size_t index);
+
+/*#############################################################################
+  # Description: 
+	find data in vector and returns a pointer to the data in the vector
+  # Parameters:
+	d_vector - pointer to the dynamic vector
+	data - data to find inside the vector
+	compare_func - a compare function for the data with items in vector
+  # Return Value:
+	address of the element that data is found in
+	returns NULL if the data is not in vector
+##############################################################################*/
+void *DVectorFind(const d_vector_t *d_vector, const void *data, int(*compare_func)(const void *, const void *));
 
 /*#############################################################################
   # Description: 
@@ -106,5 +120,7 @@ size_t DVectorCapacity(const d_vector_t *d_vector);
 	returns -1 if allocation didn't succeded
 ##############################################################################*/
 int DVectorReserve(d_vector_t *d_vector, size_t number_of_elements);
+
+
 
 #endif /* VECTOR_H */

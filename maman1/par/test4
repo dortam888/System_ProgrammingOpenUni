@@ -1,0 +1,8 @@
+"This is a string test"
+"It should always be balanced"
+"Even if the parenthesis go crazy like this (}{([][[)((("
+It should also be balanced if it's in the middle of the line_index
+Like this "[}((([[}}}}" Ok?
+String can also appear in balanced line:
+( this is a {String "I'll close the parenthesis } but it shouldn't affect ) OK?" }) 
+Text should be balanced

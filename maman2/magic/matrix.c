@@ -1,13 +1,18 @@
-#include <stdio.h>
-#include <ctype.h>
+#include <stdio.h> /* printf, getchar*/
+#include <ctype.h> /* isdigit, isspace*/
 #include "matrix.h"
+
+/*
+	Implemations of functions from library matrix.h
+*/
+
 
 static int CharToInt(char c);
 static int GetInt(error_t *err);
 static void PrintErrorMessage(error_t err);
 
 /*Prints matrix see matrix.h for details*/
-void PrintMatrix(const matrix_t matrix)
+void PrintMatrix(const matrix_t matrix) 
 {
 	int i = 0;
 	int j = 0;

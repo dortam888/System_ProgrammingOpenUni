@@ -1,0 +1,9 @@
+To Run all tests run the bash script "test.sh" with the command "make test"
+Tests are pretty much self explained but included:
+1. Empty File
+2. Regular text with parenthesis
+3. Tests for strings (Balanced and Imbalanced)
+4. Tests for comments (Balanced and Imbalanced)
+5. Tests for special cases of one { or } in a line (with whitespaces) (Balanced and Imbalanced)
+6. Test for full lines (100 chars)
+7. Test for a lot of lines

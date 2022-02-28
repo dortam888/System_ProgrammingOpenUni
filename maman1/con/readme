@@ -1,0 +1,8 @@
+In order to see tests you can run the executable file test. To create test exe you can type the command "make test".
+Tests included: 
+	Empty String: ""
+	Full String (80 characters): "abcdef#LLMN  67890123#HIJKMNOpqrstu(?@AB,1124-8) 	789101112131415 abylmno 456789"
+	Regular Sequence: "123456789 abcdefghijklmnopqrstuvwxyz"
+	Reversed Sequence: "987654321 zyxwvutsrqponmlkjihgfedcba"
+	Non-Alphanumeric Sequence: " !\"#$%&'()*+,-./ :;<=>?@AB [\\]^_` {|}~"
+	No Sequence: "ab cd ef gh ij kl mn op qr st uv wx yz 12 34 56 78 9101112 13579"

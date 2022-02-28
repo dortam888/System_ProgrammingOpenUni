@@ -1,0 +1,5 @@
+Unbalanced Comment
+(/*poop
+Comment is balanced but line is unbalanced
+*/
+text should be unbalanced

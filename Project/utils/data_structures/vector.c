@@ -199,6 +199,22 @@ size_t DVectorCapacity(const d_vector_t *d_vector)
 											d_vector->size_of_element;
 }
 
+void* DVectorFind(const d_vector_t *vector, const void *data, int(*compare_func)(const void *, const void *))
+{
+	int i = 0;
+	
+	for (i = 0; i < DVectorSize(vector); ++i)
+	{
+		void *data_in_vector = DVectorGetItemAddress(vector, i);
+		if (compare_func(data_in_vector, data) == 0)
+		{
+			return data_in_vector;
+		}
+	}
+	
+	return NULL;
+}
+
 int DVectorReserve(d_vector_t *d_vector, size_t number_of_elements)
 {
 	assert(NULL != d_vector);

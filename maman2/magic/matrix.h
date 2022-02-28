@@ -1,8 +1,12 @@
 #ifndef MATRIX
 #define MATRIX
 
-/*This is an API for a square matrix of defined size N X N (predefined by the user here).
-  numbers in the matrix are predefined in base MATRIX_BASE (Binary, Octal, Decimal, Hexa..)*/
+/*
+	Author: Dor Tambour
+	Version: 1.0
+	This is an API for a square matrix of defined size N X N (predefined by the user here).
+  	numbers in the matrix are predefined in base MATRIX_BASE (Binary, Octal, Decimal, Hexa..)
+*/
 
 #define N 20
 #define MATRIX_BASE 10

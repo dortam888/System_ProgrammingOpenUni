@@ -1,0 +1,9 @@
+Here are examples of balanced lines:
+{}[]() line should be balanced
+{abc(def[ghi]jkl)lmn} line should be balanced
+[{()}] line should be balanced
+          {           [   ]  (penguin)    } line should be balanced
+long lines that should be balanced too:
+((((((((((((((((((((((((((((((((((((((((((((((((o))))))))))))))))))))))))))))))))))))))))))))))))  
+({[([{[({{[([[(({{                                                             }}))]])]}})]}])]})
+Text Should be balanced

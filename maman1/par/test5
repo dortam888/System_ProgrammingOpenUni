@@ -1,0 +1,8 @@
+/* This is a comment */
+/* Comment should be balanced always */
+/* Even if parenthesis go crazy like ({])9({}}}][]((( */
+/* also i can have a multiple line comments
+They are balanced too (until i close the comments]
+*/
+(It /*should also work in the middle ) */ OK?)
+Text Should be Balanced
