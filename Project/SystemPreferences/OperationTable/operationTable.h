@@ -8,12 +8,18 @@
 
 typedef struct operations operation_data_t;
 
-unsigned int GetOpcode(const char *operation_name);
+int GetCommand(const char *operation_name);
 
-unsigned int GetFunct(const char *operation_name);
+const char *GetCommandName(int command);
 
-int IsSrcAdressingMethodLegal(const char *operation_name, enum addressing_methods src_addressing_method);
+unsigned int GetOpcode(int command);
 
-int IsDestAdressingMethodLegal(const char *operation_name, enum addressing_methods dest_addressing_method);
+unsigned int GetFunct(int command);
+
+int IsSrcAdressingMethodLegal(int command, enum addressing_methods src_addressing_method);
+
+int IsDestAdressingMethodLegal(int command, enum addressing_methods dest_addressing_method);
+
+unsigned int GetNumOfOperands(int command);
 
 #endif /* OPERATIONS_H */

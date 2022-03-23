@@ -1,0 +1,121 @@
+;comment for the file
+mov #77 r5
+mov #16 Label
+mov #4 Label[r11]
+
+mov r1 r2
+mov r11 Label
+mov r15 Label[r15]
+
+mov Label1 r4
+mov Label1 Label
+mov Label1 Label[r14]
+
+mov Label[r12] r3
+mov Label[r14] Label1
+mov Label[r15] Label1[r12]
+
+cmp #4 #6
+cmp #15 r2
+cmp #200 Label
+cmp #500 Label[r12]
+
+cmp r5 #7
+cmp r8 r6
+cmp r10 Label
+cmp r13 Label[13]
+
+cmp Label #66
+cmp Label r3
+cmp Label Label1
+cmp Label Label1[r15]
+
+cmp Label[r10] #7
+cmp Label[r11] r11
+cmp Label[r12] Label
+cmp Label[r13] Label1[r14]
+
+.entry Label
+.extern W
+Label: .data 77, -89, 1, -1
+
+add #77 r10
+add #75 Label
+add #44 Label[r14]
+
+add r2 r5
+add r6 Label
+add r9 Label1[r13]
+
+add Label r3
+add Label Label1
+add Label Label1[r12]
+
+add Label[r10] Label1[r11]
+add Label[r10] r4
+add Label[r14] Label1
+
+Label1: .data			9 ,   8, -64
+
+sub #77 r10
+sub #75 Label
+sub #44 Label[r14]
+
+sub r2 r5
+sub r6 Label
+sub r9 Label1[r13]
+
+sub Label r3
+sub Label Label1
+sub Label Label1[r12]
+
+sub Label[r10] Label1[r11]
+sub Label[r10] r4
+sub Label[r14] Label1
+
+lea r1 Label1
+lea r1 Label[r10]
+
+lea Label Label1
+lea Label Label1[r15]
+
+lea Label1[r14] Label
+lea Label[r15] Label1[r10]
+
+clr r6
+clr Label
+clr Label1[r15]
+
+not r7
+not Label
+not Label1[r15]
+
+inc r9
+inc W
+inc Label1[r15]
+
+dec r15
+dec Label
+dec Label1[r15]
+
+jmp Label1
+jmp Label[r10]
+
+bne Label
+bne W[r11]
+
+jsr Label1
+jsr Label1[r12]
+
+red r7
+red W
+red W[r15]
+
+prn #4
+Command: prn r7
+prn Label
+prn Label1[r15]
+
+rts
+stop
+

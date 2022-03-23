@@ -1,136 +1,244 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <ctype.h>
 
-#include "../SymbolTableStage/SymbolTableCreate.h"
+#include "WriteBinaryToFile.h"
+#include "ObjectFileCreate.h"
 #include "../utils/file_utils/fileUtils.h"
-#include "../OperationTable/operationTable.h"
+#include "../Parsing/parsing_asm_file.h"
+#include "../SymbolTableStage/SymbolTableCreate.h"
+#include "../SystemPreferences/OperationTable/operationTable.h"
+#include "../SystemPreferences/GeneralSystemPreferences/system_preferences.h"
+#include "../SystemPreferences/AddressingMethods/addressing_methods.h"
+
+static enum outfiles_status HandleCommand(FILE *object_file, FILE *external_file, symbol_table_t *symbol_table, char *line, 
+                                          size_t line_number, size_t *instruction_counter, const char *delim);
+static enum outfiles_status HandleAttribute(FILE *data_file, FILE *entry_file, symbol_table_t *symbol_table, const char *line, char *attribute, size_t line_number, 
+                                            size_t *instruction_counter, size_t final_instruction_counter, size_t *data_counter, const char *delim);
 
 struct attribute_handlers
 {
 	const char *attribute_name;
-	ssize_t(*handle_func)(FILE *, symbol_table_t *, size_t, size_t, size_t *);
+	enum outfiles_status(*handle_func)(FILE *, FILE *, symbol_table_t *, const char *, size_t, size_t, size_t *, const char *);
 };
 
-
-enum outfiles_status CreateObjectFile(symbol_table_t *symbol_table, size_t final_instruction_counter)
+struct files
 {
-	size_t data_counter = 0;
-	size_t instruction_counter = START_ADDRESS_OF_INSTRUCTION_COUNT;
-	FILE *input_file = NULL;
-	FILE *object_file = NULL;
-	FILE *data_file = NULL;
+	FILE *input_file;
+	FILE *object_file;
+	FILE *data_file;
+	FILE *entry_file;
+	FILE *external_file;
+};
+
+static enum outfiles_status OpenFiles(const char *file_name, struct files *files)
+{
 	char input[MAX_FILE_NAME] = {'\0'};
 	char object[MAX_FILE_NAME] = {'\0'};
-	char line[MAX_LINE_LEN] = {'\0'};
-	size_t line_number = 0;
-	const char *delim = " ,\t\n";
-	
+	char enteries[MAX_FILE_NAME] = {'\0'};
+	char externals[MAX_FILE_NAME] = {'\0'};
+
 	PutEndingToFileName(input, file_name, ".am");
 	PutEndingToFileName(object, file_name, ".ob");
+	PutEndingToFileName(enteries, file_name, ".ent");
+	PutEndingToFileName(externals, file_name, ".ext");
 	
-	input_file = fopen(input, "r");
-	if (input_file == NULL)
+	files->input_file = fopen(input, "r");
+	if (files->input_file == NULL)
 	{
 		printf("couldn't open file %s\n", input);
 		return FAILED_TO_CREATE_FILES;
 	}
 	
-	object_file = fopen(object, "w");
-	if (object_file == NULL)
+	files->object_file = fopen(object, "w");
+	if (files->object_file == NULL)
 	{
 		printf("couldn't open file %s\n", object);
 		return FAILED_TO_CREATE_FILES;
 	}
 	
-	data_file = fopen("data_file", "w");
-	if (data_file == NULL)
+	files->entry_file = fopen(enteries, "w");
+	if(files->entry_file == NULL)
+	{
+		printf("couldn't open file %s\n", enteries);
+		return FAILED_TO_CREATE_FILES;
+	}
+
+	files->external_file = fopen(externals, "w");
+	if(files->external_file == NULL)
+	{
+		printf("couldn't open file %s\n", externals);
+		return FAILED_TO_CREATE_FILES;
+	}
+
+	files->data_file = fopen("data_file", "w");
+	if (files->data_file == NULL)
+	{
+		return FAILED_TO_CREATE_FILES;
+	}
+
+	return SUCCEED_TO_CREATE_FILES;
+}
+
+static void CloseAndFreeAll(struct files *files, symbol_table_t *symbol_table)
+{
+	fclose(files->object_file);
+	fclose(files->input_file);
+	fclose(files->entry_file);
+	fclose(files->external_file);
+	FreeSymbolTable(symbol_table);
+}
+
+static void RemoveOutputFiles(const char *file_name)
+{
+	char input[MAX_FILE_NAME] = {'\0'};
+	char object[MAX_FILE_NAME] = {'\0'};
+	char enteries[MAX_FILE_NAME] = {'\0'};
+	char externals[MAX_FILE_NAME] = {'\0'};
+
+	PutEndingToFileName(input, file_name, ".am");
+	PutEndingToFileName(object, file_name, ".ob");
+	PutEndingToFileName(enteries, file_name, ".ent");
+	PutEndingToFileName(externals, file_name, ".ext");
+
+	remove(input);
+	remove(object);
+	remove(enteries);
+	remove(externals);
+}
+
+enum outfiles_status CreateOutputFiles(const char *file_name, symbol_table_t *symbol_table, size_t final_instruction_counter)
+{
+	enum outfiles_status assembler_status = SUCCEED_TO_CREATE_FILES;
+	size_t data_counter = 0;
+	size_t instruction_counter = START_ADDRESS_OF_INSTRUCTION_COUNT;
+	struct files file = {NULL, NULL, NULL, NULL, NULL};
+	char line[MAX_LINE_LEN] = {'\0'};
+	size_t line_number = 0;
+	const char *delim = " ,\t\n\v\r\f";
+
+	if(OpenFiles(file_name, &file) != SUCCEED_TO_CREATE_FILES)
 	{
 		return FAILED_TO_CREATE_FILES;
 	}
 	
-	while(fgets(line, MAX_LINE_LEN, input_file))
+	while(fgets(line, MAX_LINE_LEN, file.input_file))
 	{
-		++line_number;
-		strtok(line, delim);
+		char *current_part_of_line = NULL;
+		char copy_line[MAX_LINE_LEN] = {'\0'};
 		
-		if (IsComment(line))
+		strcpy(copy_line, line);
+		++line_number;
+		current_part_of_line = strtok(line, delim);
+		
+		if (current_part_of_line == NULL || IsComment(current_part_of_line))
 		{
 			continue;
 		}
 		
-		if (IsLabel(line))
+		if (IsLabel(current_part_of_line))
 		{
-			strtok(NULL, delim);
+			current_part_of_line = strtok(NULL, delim);
 		}
 		
-		instruction_counter = IsAttribute(line)? HandleAttribute(data_file, symbol_table, line, instruction_counter, final_instruction_counter, &data_counter) : 
-                                                 HandleCommand(object_file, symbol_table, line, instruction_counter);		
+		assembler_status = IsAttribute(current_part_of_line)? 
+		HandleAttribute(file.data_file, file.entry_file, symbol_table, copy_line, current_part_of_line, line_number, 
+		                &instruction_counter, final_instruction_counter, &data_counter, delim) : 
+    HandleCommand(file.object_file, file.external_file, symbol_table, current_part_of_line, line_number, &instruction_counter, delim);
+	}
+	
+	fclose(file.data_file);
+	FileCat(file.object_file, "data_file");
+	remove("data_file");
+
+	CloseAndFreeAll(&file, symbol_table);
+
+	if(assembler_status != SUCCEED_TO_CREATE_FILES)
+	{
+		RemoveOutputFiles(file_name);
+	}	
+
+	return SUCCEED_TO_CREATE_FILES;
+}
+
+static enum outfiles_status HandleData(FILE *data_file, FILE *entry_file, symbol_table_t *symbol_table, const char *line, size_t line_number, 
+                                       size_t address_to_write, size_t *data_counter, const char *delim)
+{
+	char *current_number = NULL;
+	
+	while((current_number = strtok(NULL, delim)) != NULL)
+	{
+		if(!IsNumber(current_number))
+		{
+			printf("Error - .data in line %lu got Unrecognized number %s\nline: %s", line_number, current_number, line);
+			return FAILED_TO_CREATE_FILES;
+		}
+		
+		WriteNumberToFile(data_file, address_to_write, strtol(current_number, NULL, DECIMAL_BASE), ABSOLUTE);
+		
+		++(*data_counter);
+		++address_to_write;
 	}
 	
 	return SUCCEED_TO_CREATE_FILES;
 }
 
-ssize_t HandleData(FILE *data_file, symbol_table_t *symbol_table, size_t line_number, size_t address_to_write, size_t *data_counter)
+static enum outfiles_status HandleString (FILE *data_file, FILE *entry_file, symbol_table_t *symbol_table, const char *line, size_t line_number, 
+                                          size_t address_to_write, size_t *data_counter, const char *delim)
 {
-	char *current_number = NULL;
-	
-	while((current_number = strtok(NULL, ", \t\n")) != NULL)
+	while (!IsStartOfString(*line))
 	{
-		if(!IsNumber(current_number))
-		{
-			printf("Error - .data in line %lu got Unrecognized number %s\n", line_number, current_number);
-			return -1;
-		}
-		
-		WriteNumberToFile(data_file, address_to_write, strtol(current_number));
-		
-		++(*data_counter);
+		++line; /* move to next letter until start of string */
 	}
+
+	++line; /* skip " which is start of string */
 	
-	return 0;
+	WriteStringToFile(data_file, address_to_write, line, data_counter);
+	
+	return SUCCEED_TO_CREATE_FILES;
 }
 
-ssize_t HandleString (FILE *data_file, symbol_table_t *symbol_table, size_t line_number, size_t address_to_write, size_t *data_counter)
+static void WriteSymbolInEntryFile(FILE *entry_file, symbol_data_t *symbol, const char *symbol_name)
 {
-	char *current_part_of_line = NULL;
-	size_t str_length = 0;
-	
-	current_part_of_line = strtok(NULL, " \t\n“\"");
-	str_length = strlen(current_part_of_line); 
-	
-	WriteStringToFile(current_part_of_line);
-	
-	*data_counter = str_length + 1; /* +1 for ending character '\0' */
-	
-	return 0;
+	fprintf(entry_file, "%s, %u, %u\n", symbol_name, GetBaseAddress(symbol), GetOffset(symbol));
 }
 
-ssize_t HandleEntry (FILE *data_file, symbol_table_t *symbol_table, size_t line_number, size_t address_to_write, size_t *data_counter)
+static enum outfiles_status HandleEntry (FILE *data_file, FILE *entry_file, symbol_table_t *symbol_table, const char *line, size_t line_number, 
+                                         size_t address_to_write, size_t *data_counter, const char *delim)
 {
-	char *entry_symbol = strtok(NULL, " \t\n");
+	char *entry_symbol = strtok(NULL, delim);
+	symbol_data_t *symbol = NULL;
 	
-	if (FindSymbolInSymbolTable(symbol_table, entry_symbol) == NULL)
+	if ((symbol = FindSymbolInSymbolTable(symbol_table, entry_symbol)) == NULL)
 	{
 		printf("Error - in line %lu symbol %s is not found in the symbol table\n", line_number, entry_symbol);
-		return -1;
+		return FAILED_TO_CREATE_FILES;
 	}
+
+	if(GetAttribute(symbol) == EXTERN)
+	{
+		printf("Error - in line %lu symbol %s has both entry and extern attributes", line_number, entry_symbol);
+		return FAILED_TO_CREATE_FILES;
+	}
+
+	WriteSymbolInEntryFile(entry_file, symbol, entry_symbol);
 	
-	return 0;
+	return SUCCEED_TO_CREATE_FILES;
 }
 
-ssize_t HandleExtern (FILE *data_file, symbol_table_t *symbol_table, size_t line_number, size_t address_to_write, size_t *data_counter)
+static enum outfiles_status HandleExtern (FILE *data_file, FILE *entry_file, symbol_table_t *symbol_table, const char *line, size_t line_number, 
+                                          size_t address_to_write, size_t *data_counter, const char *delim)
 {
-	return 0;
+	return SUCCEED_TO_CREATE_FILES;
 }
 
-static ssize_t HandleAttribute(FILE *data_file, symbol_table_t *symbol_table, char *line, size_t line_number, size_t instruction_counter, 
-							   size_t final_instruction_counter, size_t *data_counter)
+static enum outfiles_status HandleAttribute(FILE *data_file, FILE *entry_file, symbol_table_t *symbol_table, const char *line, char *attribute, size_t line_number, 
+																		        size_t *instruction_counter, size_t final_instruction_counter, size_t *data_counter, const char *delim)
 {
+	enum outfiles_status handle_attribute_status = SUCCEED_TO_CREATE_FILES;
 	struct attribute_handlers handle[] = {
-											 {".data", HandleData},
+											 						 {".data", HandleData},
 					                         {".string", HandleString},
 					                         {".entry", HandleEntry},
 					                         {".extern", HandleExtern}
@@ -139,13 +247,27 @@ static ssize_t HandleAttribute(FILE *data_file, symbol_table_t *symbol_table, ch
 	
 	for(i = 0; i < sizeof(handle) / sizeof(*handle); ++i)
 	{
-		if(strcmp(line, handle[i].attribute_name) == 0)
+		if(strcmp(attribute, handle[i].attribute_name) == 0)
 		{
-			handle[i].handle_func(data_file, symbol_table, line_number, final_instruction_counter + *data_counter, data_counter);
+			handle_attribute_status = handle[i].handle_func(data_file, entry_file, symbol_table, line, line_number, 
+			                                                final_instruction_counter + *data_counter, data_counter, delim);
 			break;
 		}
 	}
 	
-	return instruction_counter;
+	return handle_attribute_status;
 }
 
+enum outfiles_status HandleCommand(FILE *object_file, FILE *external_file, symbol_table_t *symbol_table, char *line, size_t line_number, 
+                                   size_t *instruction_counter, const char *delim)
+{
+	enum outfiles_status handle_command_status = SUCCEED_TO_CREATE_FILES;
+	int command = GetCommand(line);
+	unsigned int opcode = GetOpcode(command);
+
+	WriteOpcodeToObject(object_file, instruction_counter, opcode);
+
+	handle_command_status = WriteFunctAndAddressingInformationToObject(object_file, external_file, symbol_table, instruction_counter, command, line_number, delim);
+
+	return handle_command_status;
+}

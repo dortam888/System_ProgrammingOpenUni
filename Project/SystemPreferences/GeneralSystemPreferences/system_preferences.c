@@ -47,6 +47,21 @@ int IsValidRegister(const char *reg)
 	return 0;
 }
 
+unsigned int GetRegNumber(const char *reg)
+{
+	int i = 0;
+	
+	for (i = 0; i < num_of_regs; ++i)
+	{
+		if (strcmp(reg, REGS[i].reg_name) == 0)
+		{
+			return REGS[i].reg_num;
+		}
+	}
+	
+	return -1;
+}
+
 int IsValidRegisterForIndex(const char *reg)
 {
 	int i = 0;
@@ -62,7 +77,13 @@ int IsValidRegisterForIndex(const char *reg)
 	return REGS[i].is_index;
 }
 
-/*int IsSavedWord(const char *str)
+static const char *SAVED_COMMANDS[] = {"mov", "cmp", "add", "sub", "lea", "clr", "not", "inc", "dec", "jmp", "bne", "jsr", "red", "prn", "rts", "stop"};
+
+static const char *SAVED_REGISTERS[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15"};
+
+static const char *SAVED_GENERALS[] = {"macro", "endm"};
+
+int IsSavedWord(const char *str)
 {
 	size_t num_of_commands = sizeof(SAVED_COMMANDS)/sizeof(*SAVED_COMMANDS);
 	size_t num_of_registers = sizeof(SAVED_REGISTERS)/sizeof(*SAVED_REGISTERS);
@@ -94,4 +115,4 @@ int IsValidRegisterForIndex(const char *reg)
 	}
 	
 	return 0;
-}*/
+}

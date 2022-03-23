@@ -7,9 +7,16 @@ adrs = $(main_dir)SystemPreferences/AddressingMethods/addressing_methods.h
 op_table = $(main_dir)SystemPreferences/OperationTable/operationTable.h
 pre = $(main_dir)PreAssemblyStage/PreAssembler.h
 sym = $(main_dir)SymbolTableStage/SymbolTableCreate.h
+machcod = $(main_dir)MachineLanguageCodingStage/ObjectFileCreate.h
 
-TestSymbolTable: vector.o parsing.o file.o sys_pref.o addressing.o operationTable.o PreAssembler.o  SymbolTableCreate.o  SymbolTableTest.c
-	gcc -g -ansi -Wall -pedantic -DNDBUG *.o SymbolTableTest.c -o TestSymbolTable
+TestAssembler: vector.o parsing.o file.o sys_pref.o addressing.o operationTable.o PreAssembler.o SymbolTableCreate.o MachineCoding.o WriteBinary.o MachineCodeTest.c 
+	gcc -g -ansi -Wall -pedantic -DNDBUG *.o MachineCodeTest.c -o TestAssembler
+	
+MachineCoding.o: $(main_dir)MachineLanguageCodingStage/ObjectFileCreate.c $(machcod) $(sym) $(file) $(op_table) $(gensys) $(adrs) $(parse)
+	gcc -g -ansi -Wall -pedantic -c -DNDBUG $(main_dir)MachineLanguageCodingStage/ObjectFileCreate.c -o MachineCoding.o
+
+WriteBinary.o: $(main_dir)MachineLanguageCodingStage/WriteBinaryToFile.c $(machcod) $(sym) $(file) $(op_table) $(gensys) $(adrs) $(parse)
+	gcc -g -ansi -Wall -pedantic -c -DNDBUG $(main_dir)MachineLanguageCodingStage/WriteBinaryToFile.c -o WriteBinary.o
 
 SymbolTableCreate.o: $(main_dir)SymbolTableStage/SymbolTableCreate.c $(sym) $(file) $(op_table) $(vector) $(gensys) $(adrs) $(parse)
 	gcc -g -ansi -Wall -pedantic -c -DNDBUG $(main_dir)SymbolTableStage/SymbolTableCreate.c -o SymbolTableCreate.o
@@ -36,4 +43,4 @@ vector.o: $(main_dir)utils/data_structures/vector.c $(vector)
 	gcc -g -ansi -Wall -pedantic -c $(main_dir)utils/data_structures/vector.c
 	
 clear:
-	rm *.o TestSymbolTable
+	rm *.o TestAssembler

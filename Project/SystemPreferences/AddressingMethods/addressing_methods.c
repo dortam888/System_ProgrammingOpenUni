@@ -112,6 +112,27 @@ static int IsIndexAddressingMethod(const char *method)
 	return is_index;
 }
 
+unsigned int AddressingMethodNumber(enum addressing_methods address_method)
+{
+	switch(address_method)
+	{
+		case NONE:
+			return 0;
+		case IMMEDIATE_ADDRESSING:
+			return 0;
+		case REGISTER_ADDRESSING:
+			return 3;
+		case DIRECT_ADDRESSING:
+			return 1;
+		case INDEX_ADDRESSING:
+			return 2;
+		default:
+			return -1;
+	}
+	
+	return -1;
+}
+
 enum addressing_methods GetAddressingMethod(const char *str)
 {
 	struct address_method address_methods[] = {{IsImmediateAddressingMethod, IMMEDIATE_ADDRESSING},
@@ -151,4 +172,37 @@ size_t GetWordsForAddressMethod(enum addressing_methods address_method)
 	}
 	
 	return -1;
+}
+
+static unsigned int IndexGetRegister(const char *str)
+{
+	char reg[MAX_REG_NAME_LEN] = {'\0'};
+
+	while (*str != '[')
+	{
+		++str;
+	}
+
+	CreateRegName(reg, str);
+
+	return GetRegNumber(reg);
+}
+
+unsigned int GetRegisterNumber(const char *str, enum addressing_methods addressing_method)
+{
+	switch(addressing_method)
+	{
+		case NONE:
+			return 0;
+		case IMMEDIATE_ADDRESSING:
+			return 0;
+		case REGISTER_ADDRESSING:
+			return GetRegNumber(str);
+		case DIRECT_ADDRESSING:
+			return 0;
+		case INDEX_ADDRESSING:
+			return IndexGetRegister(str);
+		default:
+			return -1;
+	}
 }
