@@ -1,6 +1,6 @@
 ; file ps.as
-.entry LIST
-.extern W
+Label: .entry LIST
+Label2: .extern W
 MAIN: add r3, LIST
 LOOP: prn #48
 lea STR, r6
@@ -17,7 +17,7 @@ sub LOOP[r10] ,r14
 END: stop
 STR: .string "abcd\" 	1"
 LIST: .data 6, -9
-.data -100
+	  .data -100
 .entry K
 K: .data 31
 .extern val1

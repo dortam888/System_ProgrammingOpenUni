@@ -25,14 +25,27 @@ struct symbol_data
 struct attribute_handlers
 {
 	const char *attribute_name;
-	size_t(*handle_func)(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t instruction_counter, size_t *data_counter, const char *, int *);
+	size_t(*handle_func)(symbol_table_t *, symbol_data_t *,const char *, size_t, 
+											 size_t, size_t *, const char *, int *);
 };
 
-static size_t HandleLabel(d_vector_t *symbol_table, const char *line, char *label, const char *delim, size_t line_number, size_t instruction_counter, size_t *data_counter);
-static size_t HandleNotLabel(d_vector_t *symbol_table, const char *line, char *part_line, const char *delim, size_t line_number, size_t instruction_counter, size_t *data_counter);
-static size_t HandleAttribute(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, char *part, size_t line_number, 
-                              size_t instruction_counter, const char* delim, size_t *data_counter, int *status);
-static size_t HandleCommand(symbol_data_t *symbol, char *line, size_t line_number, size_t instruction_counter, const char* delim);
+static size_t HandleLabel(d_vector_t *symbol_table, const char *line, 
+                          char *label, const char *delim, size_t line_number, 
+													size_t instruction_counter, size_t *data_counter);
+
+static size_t HandleNotLabel(d_vector_t *symbol_table, const char *line, 
+                             char *part_line, const char *delim, 
+														 size_t line_number, size_t instruction_counter, 
+														 size_t *data_counter);
+
+static size_t HandleAttribute(symbol_table_t *symbol_table, symbol_data_t *symbol, 
+                              const char *line, char *part, size_t line_number, 
+                              size_t instruction_counter, const char* delim, 
+															size_t *data_counter, int *status);
+
+static size_t HandleCommand(symbol_data_t *symbol, char *line, size_t line_number, 
+                            size_t instruction_counter, const char* delim);
+
 static void FixDataAttributesInTable(symbol_table_t *symbol_table, int instruction_counter);
 
 symbol_attribute_t GetAttribute(symbol_data_t *symbol)
@@ -105,13 +118,19 @@ symbol_table_t* CreateSymbolTable(const char *file_name, size_t *instruction_cou
 		size_t(*handle_func[])(symbol_table_t *, const char *, char *, const char *, size_t, size_t, size_t *) = {HandleNotLabel, HandleLabel};
 		char *part_of_line = NULL;
 		char copy_line[MAX_LINE_LEN] = {'\0'};
-		
+
 		strcpy(copy_line, line); 
 		++line_number;
 		part_of_line = strtok(line, delim);
-		
+
 		if (part_of_line == NULL || IsComment(part_of_line))
 		{
+			continue;
+		}
+		
+		if(!IsSentenceCorrect(copy_line))
+		{
+			printf("in line %lu\n", line_number);
 			continue;
 		}
 		
@@ -159,6 +178,23 @@ symbol_data_t *FindSymbolInSymbolTable(symbol_table_t *symbol_table, const char 
 	return DVectorFind(symbol_table, symbol_name, ComapreSymbolNames);
 }
 
+static int IsSymbolLegal(symbol_table_t *symbol_table, const char *symbol_name, size_t line_number)
+{
+	if(IsSavedWord(symbol_name))
+	{
+		printf("Error - in line %lu Label name %s is a system saved name and can't be used as a symbol\n", line_number, symbol_name);
+		return 0;
+	}
+
+	if (FindSymbolInSymbolTable(symbol_table, symbol_name) != NULL)
+	{
+		printf("Error - Conflict in symbols. Label name %s defined in line %lu is already defined\n", symbol_name, line_number);
+		return 0;
+	}
+
+	return 1;
+}
+
 static size_t HandleLabel(symbol_table_t *symbol_table, const char *line, char *label, const char *delim, 
                    size_t line_number, size_t instruction_counter, size_t *data_counter)
 {
@@ -171,15 +207,8 @@ static size_t HandleLabel(symbol_table_t *symbol_table, const char *line, char *
 	
 	GetLabelName(label_name, label);
 	
-	if(IsSavedWord(label_name))
+	if(!IsSymbolLegal(symbol_table, label_name, line_number))
 	{
-		printf("Error - in line %lu Label name %s is a system saved name and can't be used\n", line_number, label_name);
-		return ERROR_IN_SYMBOL_TABLE_CREATION;
-	}
-
-	if (FindSymbolInSymbolTable(symbol_table, label_name) != NULL)
-	{
-		printf("Error - Conflict in symbols. Label name %s defined in line %lu is already defined\n", label_name, line_number);
 		return ERROR_IN_SYMBOL_TABLE_CREATION;
 	}
 	
@@ -187,7 +216,8 @@ static size_t HandleLabel(symbol_table_t *symbol_table, const char *line, char *
 	
 	current_part_of_line = strtok(NULL, delim);
 	instruction_counter = IsAttribute(current_part_of_line)? 
-	                      HandleAttribute(symbol_table, &new_symbol, line, current_part_of_line, line_number, instruction_counter, delim, data_counter, &label_status) : 
+	                      HandleAttribute(symbol_table, &new_symbol, line, current_part_of_line, line_number, 
+												                instruction_counter, delim, data_counter, &label_status) : 
 	                      HandleCommand(&new_symbol, current_part_of_line, line_number, instruction_counter, delim);
 
 	if (label_status == 0 && DVectorPushBack(symbol_table, &new_symbol) != 0)
@@ -201,14 +231,15 @@ static size_t HandleLabel(symbol_table_t *symbol_table, const char *line, char *
 static size_t HandleNotLabel(symbol_table_t *symbol_table, const char *line, char *part_of_line, const char *delim, 
                              size_t line_number, size_t instruction_counter, size_t *data_counter)
 {	
-	instruction_counter = IsAttribute(line)? HandleAttribute(symbol_table, NULL, line, part_of_line, line_number, instruction_counter, delim, data_counter, 0) : 
-                                           HandleCommand(NULL, part_of_line, line_number, instruction_counter, delim);
+	instruction_counter = IsAttribute(part_of_line)? HandleAttribute(symbol_table, NULL, line, part_of_line, line_number, 
+	                                                                 instruction_counter, delim, data_counter, 0) : 
+                                                   HandleCommand(NULL, part_of_line, line_number, instruction_counter, delim);
                                                              
   return instruction_counter;
 }
 
-static size_t SymHandleData(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t instruction_counter, 
-                            size_t *data_counter, const char *delim, int *status)
+static size_t SymHandleData(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t line_number, 
+                            size_t instruction_counter, size_t *data_counter, const char *delim, int *status)
 {	
 	if (symbol != NULL)
 	{
@@ -224,8 +255,8 @@ static size_t SymHandleData(symbol_table_t *symbol_table, symbol_data_t *symbol,
 	return instruction_counter;
 }
 
-static size_t SymHandleString(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t instruction_counter, 
-                              size_t *data_counter, const char *delim, int *status)
+static size_t SymHandleString(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t line_number, 
+                              size_t instruction_counter, size_t *data_counter, const char *delim, int *status)
 {  
 	if (symbol != NULL)
 	{
@@ -240,7 +271,7 @@ static size_t SymHandleString(symbol_table_t *symbol_table, symbol_data_t *symbo
 
 	++line; /* skip " which is start of string */
 
-	while(!IsEndOfString(*line, *(line - 1)))
+	while(!IsEndOfString(line))
 	{
 		if (*line == '\\')
 		{
@@ -255,33 +286,38 @@ static size_t SymHandleString(symbol_table_t *symbol_table, symbol_data_t *symbo
 	return instruction_counter;
 }
 
-static size_t SymHandleEntry(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t instruction_counter, 
-                            size_t *data_counter, const char *delim, int *status)
+static size_t SymHandleEntry(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t line_number, 
+                             size_t instruction_counter, size_t *data_counter, const char *delim, int *status)
 {
 	if (symbol != NULL)
 	{
-		printf("warning label before .entry qualifier\n");
+		printf("Warning - in line %lu label %s is before .entry qualifier. the label will not be added to symbol_table\n", line_number, symbol -> symbol_name);
 		*status = 1; /* don't push the label to symbol table */
 	}
 	
 	return instruction_counter;
 }
 
-static size_t SymHandleExtern(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t instruction_counter, 
-                              size_t *data_counter, const char *delim, int *status)
+static size_t SymHandleExtern(symbol_table_t *symbol_table, symbol_data_t *symbol, const char *line, size_t line_number, 
+                              size_t instruction_counter, size_t *data_counter, const char *delim, int *status)
 {
-	char *current_part_of_line = NULL;
+	char *symbol_name = NULL;
 	symbol_data_t new_symbol;
 	
 	if (symbol != NULL)
 	{
-		printf("warning label before .extern qualifier\n");
+		printf("Warning - in line %lu label %s is before .extern qualifier. the label will not be added to symbol_table\n", line_number, symbol -> symbol_name);
 		*status = 1; /* don't push the label to symbol table */
 	}
 	
-	current_part_of_line = strtok(NULL, delim);
-	InitiateNewSymbol(&new_symbol, current_part_of_line, 0, 0, EXTERN);
-	
+	symbol_name = strtok(NULL, delim);
+
+	if(!IsSymbolLegal(symbol_table, symbol_name, line_number))
+	{
+		return ERROR_IN_SYMBOL_TABLE_CREATION;
+	}
+
+	InitiateNewSymbol(&new_symbol, symbol_name, 0, 0, EXTERN);
 	DVectorPushBack(symbol_table, &new_symbol);	
 	
 	return instruction_counter;
@@ -302,7 +338,7 @@ static size_t HandleAttribute(symbol_table_t *symbol_table, symbol_data_t *symbo
 	{
 		if(strcmp(attribute, handle[i].attribute_name) == 0)
 		{
-			return handle[i].handle_func(symbol_table, symbol, line, instruction_counter, data_counter, delim, status);
+			return handle[i].handle_func(symbol_table, symbol, line, line_number, instruction_counter, data_counter, delim, status);
 		}
 	}
 	

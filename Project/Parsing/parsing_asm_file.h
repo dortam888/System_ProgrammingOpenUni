@@ -22,6 +22,6 @@ int IsSentenceCorrect(const char *line);
 
 int IsStartOfString(char c);
 
-int IsEndOfString(char c, char c_prev);
+int IsEndOfString(const char *str);
 
 #endif /* PARSING_H */

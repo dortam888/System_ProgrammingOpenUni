@@ -108,7 +108,7 @@ static void RemoveOutputFiles(const char *file_name)
 	remove(externals);
 }
 
-enum outfiles_status CreateOutputFiles(const char *file_name, symbol_table_t *symbol_table, size_t final_instruction_counter)
+enum outfiles_status CreateOutputFiles(const char *file_name, symbol_table_t *symbol_table, size_t final_instruction_counter, size_t final_data_counter)
 {
 	enum outfiles_status assembler_status = SUCCEED_TO_CREATE_FILES;
 	size_t data_counter = 0;
@@ -122,6 +122,7 @@ enum outfiles_status CreateOutputFiles(const char *file_name, symbol_table_t *sy
 	{
 		return FAILED_TO_CREATE_FILES;
 	}
+	fprintf(file.object_file, "\t%lu\t%lu\n", final_instruction_counter - START_ADDRESS_OF_INSTRUCTION_COUNT, final_data_counter);
 	
 	while(fgets(line, MAX_LINE_LEN, file.input_file))
 	{

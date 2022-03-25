@@ -2,6 +2,7 @@
 #include <stdlib.h> /* strtol */
 #include <ctype.h> /* isalpha */
 #include <string.h> /* strlen */
+#include <assert.h> /* assert */
 
 #include "parsing_asm_file.h"
 
@@ -14,7 +15,8 @@ struct parse_attributes
 int IsNumber(const char *str)
 {
 	char *end;
-	
+
+	assert(str != NULL);
 	strtol(str, &end, DECIMAL_BASE);
 	
 	return *end == '\0';
@@ -22,23 +24,30 @@ int IsNumber(const char *str)
 
 int IsComment(const char *str)
 {
+	assert(str != NULL);
 	return *str == ';';
 }
 
 int IsLabel(const char *str)
 {	
+	assert(str != NULL);
 	return isalpha(*str) && (*(str + strlen(str) - 1) == ':');
 }
 
 int IsAttribute(const char *str)
 {
+	assert(str != NULL);
 	return *str == '.';
 }
 
 char *GetLabelName(char *label_name_buffer, const char *str)
 {
-	size_t label_len = strlen(str) - 1; /* for : in the end of label */
+	size_t label_len = 0; 
 	
+	assert(str != NULL);
+	assert(label_name_buffer != NULL);
+
+	label_len = strlen(str) - 1; /* -1 to remove  : in the end of label */
 	strncpy(label_name_buffer, str, label_len);
 	label_name_buffer[label_len] = '\0';
 	
@@ -51,7 +60,7 @@ char *GetLabelFromIndexOperand(char *label, const char *operand)
 	
 	while(*operand != '[')
 	{
-		*label = *operand;
+		*label = *operand;/* for : in the end of label */
 		++label;
 		++operand;
 	}
@@ -85,7 +94,7 @@ static const char *CheckForIllegalComma(const char *line)
 	{
 		if(*line == ',')
 		{
-			printf("Illegal Comma\n");
+			printf("Illegal Comma ");
 			return NULL;
 		}
 		++line;
@@ -99,19 +108,22 @@ static const char *CheckForIllegalComma(const char *line)
 	input : char *line - the line of command
 	output: 0 if there is a mistake in the input other value otherwise
 */
-static int ParsingHandleCommand(const char *line)
+static int ParsingHandleCommand(const char *line, int status)
 {
 	line = SkipWhiteSpaces(line);
 	
-	line = CheckForIllegalComma(line);
-	
-	if (line == NULL)
+	if(status)
 	{
-		return 0;
+		line = CheckForIllegalComma(line);
+		
+		if (line == NULL)
+		{
+			return 0;
+		}
+		
+		line = SkipWhiteSpaces(line);
 	}
-	
-	line = SkipWhiteSpaces(line);
-	
+
 	while (*line != '\0')
 	{
 		int comma_flag = 0;
@@ -131,19 +143,19 @@ static int ParsingHandleCommand(const char *line)
 		
 		if(*line == ',' && comma_flag == 1)
 		{
-			printf("Multiple consecutive commas\n");
+			printf("Multiple consecutive commas ");
 			return 0;
 		}
 		
 		if (*line != ',' && *line != '\0' && comma_flag == 0)
 		{
-			printf("Missing Comma\n");
+			printf("Missing Comma ");
 			return 0;
 		}
 		
 		if (*line == '\0' && comma_flag == 1)
 		{
-			printf("Extraneous text after end of command\n");
+			printf("Extraneous text after end of command ");
 			return 0;
 		}
 	}
@@ -153,7 +165,29 @@ static int ParsingHandleCommand(const char *line)
 
 static int ParsingHandleData(const char *line)
 {
-	return 0;
+	assert(line != NULL);
+	
+	while(*line != '\0')
+	{
+		char *end;
+		++line;
+		line = SkipWhiteSpaces(line);
+		if(*line == '\0')
+		{
+			printf("Error - Extraneous text after data attribute ");
+			return 0;
+		}
+
+		strtol(line, &end, DECIMAL_BASE);
+		line = SkipWhiteSpaces(end);
+		if (*line != ',' && *line != '\0')
+		{
+			printf("Error - invalid expression in data attribute ");
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 int IsStartOfString(char c)
@@ -161,14 +195,14 @@ int IsStartOfString(char c)
 	return c == '\"';
 }
 
-int IsEndOfString(char c, char c_prev)
+int IsEndOfString(const char *str)
 {
-	return (c == '\"' && c_prev != '\\');
+	return (*str == '\"' && ((*(str - 1) == '\\' && *(str - 2) == '\\') || (*str - 1) != '\\'));
 }
 
 static int ParsingHandleString(const char *line)
 {
-	SkipWhiteSpaces(line);
+	line = SkipWhiteSpaces(line);
 
 	if(!IsStartOfString(*line))
 	{
@@ -178,12 +212,12 @@ static int ParsingHandleString(const char *line)
 
 	++line;
 
-	while(!(IsEndOfString(*line, *(line - 1))))
+	while(!(IsEndOfString(line)))
 	{
 		++line;
 	}
 
-	SkipWhiteSpaces(++line);
+	line = SkipWhiteSpaces(++line);
 	if(*line != '\0')
 	{
 		printf("Error - Extraneous text after string ");
@@ -195,14 +229,14 @@ static int ParsingHandleString(const char *line)
 
 static int ParsingHandleEntryOrExtern(const char *line)
 {
-	SkipWhiteSpaces(line);
+	line = SkipWhiteSpaces(line);
 
-	while(!isspace(line))
+	while(!isspace(*line))
 	{
 		++line;
 	}
 
-	SkipWhiteSpaces(line);
+	line = SkipWhiteSpaces(line);
 
 	if(*line != '\0')
 	{
@@ -235,14 +269,11 @@ static int ParsingHandleAttribute(const char *line)
 
 int IsSentenceCorrect(const char *line)
 {
-	line = SkipWhiteSpaces(line);
-	
-	if(IsComment(line))
-	{
-		return 1;
-	}
+	int label_status = 0;
 
-	else if (IsAttribute(line))
+	line = SkipWhiteSpaces(line);
+
+	if (IsAttribute(line))
 	{
 		return ParsingHandleAttribute(line);
 	}
@@ -253,15 +284,17 @@ int IsSentenceCorrect(const char *line)
 		return 0;
 	}
 
-	if (*(line - 1) == ':')
+	if(*(line - 1) == ':')
 	{
-		line = SkipWhiteSpaces(line);
-		line = CheckForIllegalComma(line);
-		if (line == NULL)
-		{
-			return 0;
-		}
+		label_status = 1;
 	}
 
-	return ParsingHandleCommand(line);
+	line = SkipWhiteSpaces(line);
+
+	if (IsAttribute(line))
+	{
+		return ParsingHandleAttribute(line);
+	}
+
+	return ParsingHandleCommand(line, label_status);
 }
