@@ -58,7 +58,7 @@ void WriteNumberToFile(FILE *output_file, size_t address_to_write, unsigned int 
 	
 	number_to_write &= NumForMasking(BITS_FOR_IMMEDIATE);
 
-	fprintf(output_file, "%04lu\t%c%x%c", address_to_write, bit_group, word_attribute, seperator);	
+	fprintf(output_file, "%04u\t%c%x%c", (unsigned int)address_to_write, bit_group, word_attribute, seperator);	
 	++bit_group;
 	
 	for (i = 0; i < BITS_FOR_IMMEDIATE; i+=BITS_IN_GROUP)

@@ -111,7 +111,7 @@ static const char *CheckForIllegalComma(const char *line)
 static int ParsingHandleCommand(const char *line, int status)
 {
 	line = SkipWhiteSpaces(line);
-	
+
 	if(status)
 	{
 		line = CheckForIllegalComma(line);
@@ -273,6 +273,11 @@ int IsSentenceCorrect(const char *line)
 
 	line = SkipWhiteSpaces(line);
 
+	if(*line == '\0')
+	{
+		return 1;
+	}
+
 	if (IsAttribute(line))
 	{
 		return ParsingHandleAttribute(line);
@@ -290,6 +295,12 @@ int IsSentenceCorrect(const char *line)
 	}
 
 	line = SkipWhiteSpaces(line);
+
+	if(*line == '\0')
+	{
+		printf("Error - Empty Label\n");
+		return 0;
+	}
 
 	if (IsAttribute(line))
 	{
