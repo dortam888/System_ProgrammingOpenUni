@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 		{
 			return -1;
 		}
-		CreateOutputFiles(argv[i], new_assembler.symbol_table, new_assembler.instruction_counter);
+		CreateOutputFiles(argv[i], new_assembler.symbol_table, new_assembler.instruction_counter, new_assembler.data_counter);
 	}
 	
 	return 0;

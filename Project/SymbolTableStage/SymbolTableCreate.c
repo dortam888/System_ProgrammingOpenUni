@@ -130,7 +130,7 @@ symbol_table_t* CreateSymbolTable(const char *file_name, size_t *instruction_cou
 		
 		if(!IsSentenceCorrect(copy_line))
 		{
-			printf("in line %zu\n", line_number);
+			printf("in line %u\n", (unsigned int)line_number);
 			continue;
 		}
 		
@@ -182,13 +182,13 @@ static int IsSymbolLegal(symbol_table_t *symbol_table, const char *symbol_name, 
 {
 	if(IsSavedWord(symbol_name))
 	{
-		printf("Error - in line %zu Label name %s is a system saved name and can't be used as a symbol\n", line_number, symbol_name);
+		printf("Error - in line %u Label name %s is a system saved name and can't be used as a symbol\n", (unsigned int)line_number, symbol_name);
 		return 0;
 	}
 
 	if (FindSymbolInSymbolTable(symbol_table, symbol_name) != NULL)
 	{
-		printf("Error - Conflict in symbols. Label name %s defined in line %zu is already defined\n", symbol_name, line_number);
+		printf("Error - Conflict in symbols. Label name %s defined in line %u is already defined\n", symbol_name, (unsigned int)line_number);
 		return 0;
 	}
 
@@ -291,7 +291,7 @@ static size_t SymHandleEntry(symbol_table_t *symbol_table, symbol_data_t *symbol
 {
 	if (symbol != NULL)
 	{
-		printf("Warning - in line %zu label %s is before .entry qualifier. the label will not be added to symbol_table\n", line_number, symbol -> symbol_name);
+		printf("Warning - in line %u label %s is before .entry qualifier. the label will not be added to symbol_table\n", (unsigned int)line_number, symbol -> symbol_name);
 		*status = 1; /* don't push the label to symbol table */
 	}
 	
@@ -306,7 +306,7 @@ static size_t SymHandleExtern(symbol_table_t *symbol_table, symbol_data_t *symbo
 	
 	if (symbol != NULL)
 	{
-		printf("Warning - in line %zu label %s is before .extern qualifier. the label will not be added to symbol_table\n", line_number, symbol -> symbol_name);
+		printf("Warning - in line %u label %s is before .extern qualifier. the label will not be added to symbol_table\n", (unsigned int)line_number, symbol -> symbol_name);
 		*status = 1; /* don't push the label to symbol table */
 	}
 	
@@ -342,7 +342,7 @@ static size_t HandleAttribute(symbol_table_t *symbol_table, symbol_data_t *symbo
 		}
 	}
 	
-	printf("Error - In line %zu No Such Attribute %s\n", line_number, attribute);
+	printf("Error - In line %u No Such Attribute %s\n", (unsigned int)line_number, attribute);
 	
 	return instruction_counter;
 }
@@ -355,13 +355,19 @@ static size_t ParseCommand(char *line, size_t line_number, size_t instruction_co
 
 	if(GetCommand(line) == ERROR)
 	{
-		printf("Error - In line %zu Command %s doesn't exist\n", line_number, line);
+		printf("Error - In line %u Command %s doesn't exist\n", (unsigned int)line_number, line);
 		return ERROR_IN_SYMBOL_TABLE_CREATION;
 	}
 		
 	while((line = strtok(NULL, delim)) != NULL)
 	{
 		address_method = GetAddressingMethod(line);
+		if (address_method == INVALID)
+		{
+			printf("Error - in line %u Command is getting unknown type of operand\n", (unsigned int)line_number);
+			return ERROR_IN_SYMBOL_TABLE_CREATION;
+		}
+
 		instruction_counter += GetWordsForAddressMethod(address_method);
 	}
 	

@@ -118,7 +118,7 @@ int WriteFunctAndAddressingInformationToObject(FILE *object_file, FILE *external
 
 		if((operand = strtok(NULL, delim)) == NULL)
 		{
-			printf("Error - In line %zu command %s expects %u parameters but gets only %d\n", line_number, GetCommandName(command), num_of_operands, i);
+			printf("Error - In line %u command %s expects %u parameters but gets only %d\n", (unsigned int)line_number, GetCommandName(command), num_of_operands, i);
 			return -1;
 		}
 		
@@ -129,7 +129,7 @@ int WriteFunctAndAddressingInformationToObject(FILE *object_file, FILE *external
 
 	if(strtok(NULL, delim) != NULL)
 	{
-		printf("Error - In line %zu extraneous text in command\n", line_number);
+		printf("Error - In line %u command %s expects %d operands but gets more\n", (unsigned int)line_number, GetCommandName(command), num_of_operands);
 		return -1;
 	}
 
@@ -152,8 +152,8 @@ static int HandleImmediateAddressing(FILE *object_file, const char *operand, siz
 
 static void WriteSymbolInExternalFile(FILE *externals_file, const char *operand, size_t instruction_counter)
 {
-	fprintf(externals_file, "%s\t%s\t%zu\n", "BASE", operand, instruction_counter);
-	fprintf(externals_file, "%s\t%s\t%zu\n", "OFFSET", operand, instruction_counter + 1);
+	fprintf(externals_file, "%s\t%s\t%u\n", "BASE", operand, (unsigned int)instruction_counter);
+	fprintf(externals_file, "%s\t%s\t%u\n", "OFFSET", operand, (unsigned int)(instruction_counter + 1));
 }
 
 static int HandleDirectAddressing(FILE *object_file, FILE *external_file, symbol_table_t *symbol_table, const char *operand, 
@@ -163,7 +163,7 @@ static int HandleDirectAddressing(FILE *object_file, FILE *external_file, symbol
 	symbol_data_t *symbol = NULL;
 	if ((symbol = FindSymbolInSymbolTable(symbol_table, operand)) == NULL)
 	{
-		printf("Error - In line %zu symbol %s is undefined\n", line_number, operand);
+		printf("Error - In line %u symbol %s is undefined\n", (unsigned int)line_number, operand);
 		return -1;
 	}
 

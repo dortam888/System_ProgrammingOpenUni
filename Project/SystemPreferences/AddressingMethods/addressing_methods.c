@@ -104,7 +104,7 @@ static int IsIndexAddressingMethod(const char *method)
 		}
 	}
 	
-	if (!CreateRegName(reg_name, ++method) || !IsValidRegisterForIndex(reg_name))
+	if (is_index && (!CreateRegName(reg_name, ++method) || !IsValidRegisterForIndex(reg_name)))
 	{
 		is_index = 0;
 	}

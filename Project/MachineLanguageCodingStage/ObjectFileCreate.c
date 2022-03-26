@@ -122,7 +122,7 @@ enum outfiles_status CreateOutputFiles(const char *file_name, symbol_table_t *sy
 	{
 		return FAILED_TO_CREATE_FILES;
 	}
-	fprintf(file.object_file, "\t%zu\t%zu\n", final_instruction_counter - START_ADDRESS_OF_INSTRUCTION_COUNT, final_data_counter);
+	fprintf(file.object_file, "\t%u\t%u\n", (unsigned int)(final_instruction_counter - START_ADDRESS_OF_INSTRUCTION_COUNT), (unsigned int)final_data_counter);
 	
 	while(fgets(line, MAX_LINE_LEN, file.input_file))
 	{
@@ -172,7 +172,7 @@ static enum outfiles_status HandleData(FILE *data_file, FILE *entry_file, symbol
 	{
 		if(!IsNumber(current_number))
 		{
-			printf("Error - .data in line %zu got Unrecognized number %s\nline: %s", line_number, current_number, line);
+			printf("Error - .data in line %u got Unrecognized number %s\nline: %s", (unsigned int)line_number, current_number, line);
 			return FAILED_TO_CREATE_FILES;
 		}
 		
@@ -213,13 +213,13 @@ static enum outfiles_status HandleEntry (FILE *data_file, FILE *entry_file, symb
 	
 	if ((symbol = FindSymbolInSymbolTable(symbol_table, entry_symbol)) == NULL)
 	{
-		printf("Error - in line %zu symbol %s is not found in the symbol table\n", line_number, entry_symbol);
+		printf("Error - in line %u symbol %s has entry attribute but is not defined in the file\n", (unsigned int)line_number, entry_symbol);
 		return FAILED_TO_CREATE_FILES;
 	}
 
 	if(GetAttribute(symbol) == EXTERN)
 	{
-		printf("Error - in line %zu symbol %s has both entry and extern attributes", line_number, entry_symbol);
+		printf("Error - in line %u symbol %s has both entry and extern attributes\n", (unsigned int)line_number, entry_symbol);
 		return FAILED_TO_CREATE_FILES;
 	}
 
