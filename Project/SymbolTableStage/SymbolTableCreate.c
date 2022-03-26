@@ -409,9 +409,9 @@ static void FixDataAttributesInTable(symbol_table_t *symbol_table, int instructi
 		for (i = 0; i < DVectorSize(symbol_table); ++i)
 		{
 			symbol_data_t *new_symbol = DVectorGetItemAddress(symbol_table, i);
-			printf("%5s	%5lu   %5lu	%5d	 %5d\n", new_symbol -> symbol_name, 
-																				new_symbol -> address_value, 
-																				new_symbol -> base_address, 
+			printf("%5s	%5u   %5u	%5d	 %5d\n", new_symbol -> symbol_name, 
+																				(unsigned int)new_symbol -> address_value, 
+																				(unsigned int)new_symbol -> base_address, 
 																				new_symbol -> attribute, 
 																				new_symbol -> offset);
 		}

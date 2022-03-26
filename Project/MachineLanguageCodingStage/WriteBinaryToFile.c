@@ -11,6 +11,7 @@
 
 #define NUMBER_OF_CHARS_IN_GROUP 3
 #define BITS_IN_GROUP 4
+#define ERROR_IN_WRITING_TO_FILES -1
 
 static int WriteOperandToFile(FILE *object_file, FILE *external_file, symbol_table_t *symbol_table, const char *operand, 
                        size_t line_number, size_t *instruction_counter, enum addressing_methods method);
@@ -104,6 +105,45 @@ static void WriteCommandCode(FILE *output_file, size_t *instruction_counter, uns
 	++(*instruction_counter);
 }
 
+static int CheckAddressingMethodsForCommand(int command, enum addressing_methods src, enum addressing_methods dest, unsigned int num_of_operands, size_t line_number)
+{
+	switch(num_of_operands)
+	{
+		case 0:
+			break;
+		case 1:
+		{
+			if(!IsDestAdressingMethodLegal(command, src))
+			{
+				printf("Error - in line number %u command %s cannot get operand with addressing method %s\n", 
+				                  (unsigned int)line_number, GetCommandName(command), StringAddMethod(src));
+				return ERROR_IN_WRITING_TO_FILES;
+			}
+			break;
+		}
+		case 2:
+		{
+			if(!IsSrcAdressingMethodLegal(command, src))
+			{
+				printf("Error - in line number %u command %s cannot get operand with addressing method %s as source\n",
+				                  (unsigned int)line_number, GetCommandName(command), StringAddMethod(src));
+				return ERROR_IN_WRITING_TO_FILES;
+			}
+			if(!IsDestAdressingMethodLegal(command, dest))
+			{
+				printf("Error - in line number %u command %s cannot get operand with addressing method %s as destination\n",
+				                  (unsigned int)line_number, GetCommandName(command), StringAddMethod(dest));
+				return ERROR_IN_WRITING_TO_FILES;
+			}
+			break;
+		}
+			default:
+				printf("Crash Mode commands cannot get this number of operands\n");
+	}
+
+	return 0;
+}
+
 int WriteFunctAndAddressingInformationToObject(FILE *object_file, FILE *external_file, symbol_table_t *symbol_table, size_t *instruction_counter, 
                                                int command, size_t line_number, const char *delim)
 {
@@ -119,7 +159,7 @@ int WriteFunctAndAddressingInformationToObject(FILE *object_file, FILE *external
 		if((operand = strtok(NULL, delim)) == NULL)
 		{
 			printf("Error - In line %u command %s expects %u parameters but gets only %d\n", (unsigned int)line_number, GetCommandName(command), num_of_operands, i);
-			return -1;
+			return ERROR_IN_WRITING_TO_FILES;
 		}
 		
 		command_second_word[i].method = GetAddressingMethod(operand); /*TODO check addressing method is legal for the command*/
@@ -127,10 +167,16 @@ int WriteFunctAndAddressingInformationToObject(FILE *object_file, FILE *external
 		strcpy(command_second_word[i].operand, operand);
 	}
 
+
 	if(strtok(NULL, delim) != NULL)
 	{
 		printf("Error - In line %u command %s expects %d operands but gets more\n", (unsigned int)line_number, GetCommandName(command), num_of_operands);
-		return -1;
+		return ERROR_IN_WRITING_TO_FILES;
+	}
+
+	if(CheckAddressingMethodsForCommand(command, command_second_word[0].method, command_second_word[1].method, num_of_operands, line_number) != 0)
+	{
+		return ERROR_IN_WRITING_TO_FILES;
 	}
 
 	if(num_of_operands != 0)
@@ -164,7 +210,7 @@ static int HandleDirectAddressing(FILE *object_file, FILE *external_file, symbol
 	if ((symbol = FindSymbolInSymbolTable(symbol_table, operand)) == NULL)
 	{
 		printf("Error - In line %u symbol %s is undefined\n", (unsigned int)line_number, operand);
-		return -1;
+		return ERROR_IN_WRITING_TO_FILES;
 	}
 
 	attribute = (GetAttribute(symbol) == EXTERN)? EXTERNAL : RELATIVE;
@@ -209,7 +255,7 @@ static int WriteOperandToFile(FILE *object_file, FILE *external_file, symbol_tab
 		case NONE:
 			return 0;
 		default:
-			return -1;
+			return ERROR_IN_WRITING_TO_FILES;
 	}
 
 	return writing_status;

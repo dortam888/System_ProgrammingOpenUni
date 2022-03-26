@@ -8,7 +8,7 @@ pre = PreAssemblyStage/PreAssembler.h
 sym = SymbolTableStage/SymbolTableCreate.h
 maccod = MachineLanguageCodingStage/ObjectFileCreate.h
 
-assembler: vector.o parsing.o file.o sys_pref.o addressing.o operationTable.o PreAssembler.o SymbolTableCreate.o MachineCoding.o WriteBinary.o  
+assembler: vector.o parsing.o file.o sys_pref.o addressing.o operationTable.o PreAssembler.o SymbolTableCreate.o MachineCoding.o WriteBinary.o main.c
 	gcc -ansi -Wall -pedantic *.o main.c -o assembler
 	
 MachineCoding.o: MachineLanguageCodingStage/ObjectFileCreate.c $(machcod) $(sym) $(file) $(op_table) $(gensys) $(adrs) $(parse)

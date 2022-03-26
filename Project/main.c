@@ -27,14 +27,16 @@ int main(int argc, char* argv[])
 	{
 		struct assembler new_assembler = {START_ADDRESS_OF_INSTRUCTION_COUNT, 0, NULL};
 		
+		printf("in file %s.as\n", argv[i]);
+
 		if (CreateAmFile(argv[i]) != SUCCESS)
 		{
-			return -1;
+			continue;
 		}
 		new_assembler.symbol_table = CreateSymbolTable(argv[i], &new_assembler.instruction_counter, &new_assembler.data_counter);
 		if(new_assembler.symbol_table == NULL)
 		{
-			return -1;
+			continue;
 		}
 		CreateOutputFiles(argv[i], new_assembler.symbol_table, new_assembler.instruction_counter, new_assembler.data_counter);
 	}
@@ -45,7 +47,7 @@ int main(int argc, char* argv[])
 void UsageInfo()
 {
 	printf("To use the assembler enter the command 'assembler' with all one or multiple assembly files with the end .as\n \
-	        Available Flags: -E -S\n \
-					-E\tStops the assembler after the preprocessing stage\n \
-					-S\tStop the assembler after before assembling and creating the code out files");
+Available Flags: -E -S\n \
+	-E\tStops the assembler after the preprocessing stage\n \
+	-S\tStop the assembler after before assembling and creating the code out files\n");
 }
